@@ -3,22 +3,33 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import bodyParser from "body-parser";
 import cors from "cors";
+import serverless from "serverless-http";
 
 dotenv.config();
 
 const app = express();
-app.use(bodyParser.json());
-app.use(cors());
 
-// MongoDB connection
+// ✅ Proper CORS setup
+app.use(cors({
+  origin: [
+    "http://localhost:3000", // local dev frontend
+    "https://your-frontend-domain.vercel.app" // deployed frontend
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  credentials: true
+}));
+
+app.use(bodyParser.json());
+
+// ✅ Connect to MongoDB (MongoDB Atlas recommended)
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
-  useUnifiedTopology: true,
+  useUnifiedTopology: true
 })
-  .then(() => console.log("MongoDB connected"))
-  .catch(err => console.error("MongoDB connection error:", err));
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch(err => console.error("❌ MongoDB connection error:", err));
 
-// Schema and Model
+// === Schema and Model ===
 const resultSchema = new mongoose.Schema({
   round: { type: Number, required: true, unique: true },
   mainresults: { type: Object, required: true },
@@ -27,7 +38,7 @@ const resultSchema = new mongoose.Schema({
 
 const Result = mongoose.model("Result", resultSchema);
 
-// Routes
+// === Routes ===
 
 // Get all existing rounds
 app.get("/rounds", async (req, res) => {
@@ -39,11 +50,10 @@ app.get("/rounds", async (req, res) => {
   }
 });
 
-// Get total scores (sum of all rounds)
+// Get total scores
 app.get("/totals", async (req, res) => {
   try {
     const rounds = await Result.find({});
-
     const mainTotals = {};
     const legionTotals = {};
 
@@ -69,7 +79,6 @@ app.get("/totals", async (req, res) => {
     res.status(500).json({ message: "Error calculating totals", error: err });
   }
 });
-
 
 // Get data for a specific round
 app.get("/round/:round", async (req, res) => {
@@ -102,6 +111,9 @@ app.post("/round", async (req, res) => {
   }
 });
 
-// Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// ❌ Remove app.listen (Vercel handles this automatically)
+// const PORT = process.env.PORT || 5000;
+// app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// ✅ Export as serverless function for Vercel
+export const handler = serverless(app);
