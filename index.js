@@ -13,15 +13,15 @@ const app = express();
 app.use(cors({
   origin: [
     "http://localhost:3000", // local dev frontend
-    "https://your-frontend-domain.vercel.app" // deployed frontend
+    "https://rsrback.vercel.app" // deployed frontend
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true
 }));
 
+
 app.use(bodyParser.json());
 
-// ✅ Connect to MongoDB (MongoDB Atlas recommended)
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
@@ -29,7 +29,6 @@ mongoose.connect(process.env.MONGO_URI, {
   .then(() => console.log("✅ MongoDB connected"))
   .catch(err => console.error("❌ MongoDB connection error:", err));
 
-// === Schema and Model ===
 const resultSchema = new mongoose.Schema({
   round: { type: Number, required: true, unique: true },
   mainresults: { type: Object, required: true },
@@ -38,9 +37,6 @@ const resultSchema = new mongoose.Schema({
 
 const Result = mongoose.model("Result", resultSchema);
 
-// === Routes ===
-
-// Get all existing rounds
 app.get("/rounds", async (req, res) => {
   try {
     const rounds = await Result.find({}, { round: 1, _id: 0 });
@@ -50,7 +46,6 @@ app.get("/rounds", async (req, res) => {
   }
 });
 
-// Get total scores
 app.get("/totals", async (req, res) => {
   try {
     const rounds = await Result.find({});
@@ -80,7 +75,6 @@ app.get("/totals", async (req, res) => {
   }
 });
 
-// Get data for a specific round
 app.get("/round/:round", async (req, res) => {
   try {
     const roundNum = parseInt(req.params.round);
@@ -92,7 +86,6 @@ app.get("/round/:round", async (req, res) => {
   }
 });
 
-// Insert or update round
 app.post("/round", async (req, res) => {
   try {
     const { round, mainresults, Legion } = req.body;
@@ -111,9 +104,4 @@ app.post("/round", async (req, res) => {
   }
 });
 
-// ❌ Remove app.listen (Vercel handles this automatically)
-// const PORT = process.env.PORT || 5000;
-// app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
-// ✅ Export as serverless function for Vercel
 export const handler = serverless(app);
